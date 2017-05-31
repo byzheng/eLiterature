@@ -1,1 +1,6 @@
-Convert literature in html format into ebook format (e.g. epub and mobi).
+# Convert literature in html format into ebook format (e.g. epub and mobi).
+
+This script is used to convert scientific publication in html format into ebook formats which is supported by calibre.
+
+To use this script, calibre should be installed and add into system path. The chrone plugin SingleFile is used to generate a single html file for pages from publishers.
+
