@@ -6,7 +6,7 @@
 #'
 #' @param file A html/html file
 #' @param output A output file with file extension supported by ebook-convert
-#' @param publisher A publisher. The supported publisher is oup and springer.
+#' @param publisher A publisher. The supported publisher is elsevier, oup and springer.
 #' @export
 convert_ebook <- function(file, output, publisher) {
     library(xml2)
@@ -113,3 +113,52 @@ parse_springer <- function(x) {
     n
 }
 
+
+
+parse_elsevier <- function(x) {
+    library(dplyr)
+    # x <- read_html(file)
+
+    title <- xml_find_first(x, '//title') %>% xml_text() %>% stringr::str_trim()
+
+    authors <- xml_find_all(x, '//a[@class="authorName svAuthor"]') %>% xml_text()
+
+    pub_info <- xml_find_first(x, '//li[@class="fullSrcTitle"]') %>% xml_text()
+
+    article <- xml_find_first(x, '//div[@class="centerInner svBigBox"]')
+
+    xml_find_all(article, '//style[@media="screen"]') %>% xml_remove()
+    xml_find_all(article, '//div[@style="display:none"]') %>% xml_remove()
+    xml_find_all(article, '//noscript') %>% xml_remove()
+    xml_find_all(article, '//div[@class="publicationHead"]') %>% xml_remove()
+    xml_find_all(article, '//div[@class="page_fragment auth_frag"]') %>% xml_remove()
+    xml_find_all(article, '//dt[@class="label"]') %>% xml_remove()
+    xml_find_all(article, '//dd[@class="fullsizeTable"]') %>% xml_remove()
+    xml_find_all(article, '//dd[@class="menuButtonLinks"]') %>% xml_remove()
+    xml_find_all(article, '//div[@class="mathjax"]') %>% xml_remove()
+    xml_find_all(article, '//div[@class="refText svRefs"]') %>% xml_remove()
+    xml_find_all(article, '//h2[contains(text(), "References")]') %>% xml_remove()
+
+    xml_find_all(article, '//div[contains(@class,"publicationCover")]') %>% xml_remove()
+    n <- xml_new_root('html')
+    xml_add_child(n, 'head')
+    head <- xml_find_first(n, 'head')
+    xml_add_child(head, 'title', title)
+    for (i in seq(along = authors)) {
+        xml_add_child(head, 'meta',
+                      name = 'author',
+                      content = authors[i])
+    }
+
+    xml_add_child(n, 'body')
+    body <- xml_find_first(n, '//body')
+    xml_add_child(body, 'h1', title)
+    n_authors <- xml_add_child(body, 'div')
+    for (i in seq(along = authors)) {
+        xml_add_child(n_authors, 'strong', authors[i])
+    }
+    xml_add_child(body, 'p', pub_info)
+    xml_add_child(body, article)
+    # write_html(n, 'tmp.html')
+    n
+}
