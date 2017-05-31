@@ -2,6 +2,12 @@
 # * Created:   04:35 PM Monday, 22 May 2017
 # * Copyright: AS IS
 
+#' Convert a html/htm file into ebook formats which are supported by ebook-convert in calibre
+#'
+#' @param file A html/html file
+#' @param output A output file with file extension supported by ebook-convert
+#' @param publisher A publisher. The supported publisher is oup and springer.
+#' @export
 convert_ebook <- function(file, output, publisher) {
     library(xml2)
     x <- read_html(file)
@@ -52,5 +58,58 @@ parse_oup <- function(x) {
     xml_add_child(body, article)
     n
 
+}
+
+
+
+
+parse_springer <- function(x) {
+    library(dplyr)
+    title <- xml_find_first(x, '//meta[@name="citation_title"]') %>% xml_attr('content')
+
+    authors <- xml_find_all(x, '//meta[@name="citation_author"]') %>% xml_attr('content')
+
+    journal <- xml_find_first(x, '//meta[@name="citation_journal_title"]') %>% xml_attr('content')
+
+    pub_info <- journal
+    article <- xml_find_first(x, '//div[@class="main-container uptodate-recommendations-on"]')
+
+    xml_find_all(article, '//aside[@class="main-sidebar-left"]') %>% xml_remove()
+    xml_find_all(article, '//aside[@class="main-sidebar-right u-interface"]') %>% xml_remove()
+    xml_find_all(article, '//div[@class="sticky-banner u-interface"]') %>% xml_remove()
+    xml_find_all(article, '//div[@class="cta-button-container u-hide-two-col"]') %>% xml_remove()
+    xml_find_all(article, '//div[@class="enumeration"]') %>% xml_remove()
+    xml_find_all(article, '//div[@class="MainTitleSection"]') %>% xml_remove()
+    xml_find_all(article, '//div[@class="authors u-clearfix authors--enhanced"]') %>% xml_remove()
+    xml_find_all(article, '//div[@class="ArticleHeader main-context"]') %>% xml_remove()
+    xml_find_all(article, '//div[@class="HeaderArticleNotes"]') %>% xml_remove()
+    xml_find_all(article, '//div[@class="article-actions--inline"]') %>% xml_remove()
+    xml_find_all(article, '//span[@class="u-screenreader-only"]') %>% xml_remove()
+    xml_find_all(article, '//h2[@id="copyrightInformation"]') %>% xml_remove()
+    xml_find_all(article, '//aside[@class="content-type-about"]') %>% xml_remove()
+    xml_find_all(article, '//div[@class="collapsible-section uptodate-recommendations gtm-recommendations"]') %>% xml_remove()
+    xml_find_all(article, '//span[@class="Occurrences"]') %>% xml_remove()
+    xml_find_all(article, '//div[@class="ArticleCopyright"]') %>% xml_remove()
+
+    n <- xml_new_root('html')
+    xml_add_child(n, 'head')
+    head <- xml_find_first(n, 'head')
+    xml_add_child(head, 'title', title)
+    for (i in seq(along = authors)) {
+        xml_add_child(head, 'meta',
+                      name = 'author',
+                      content = authors[i])
+    }
+
+    xml_add_child(n, 'body')
+    body <- xml_find_first(n, '//body')
+    xml_add_child(body, 'h1', title)
+    n_authors <- xml_add_child(body, 'div')
+    for (i in seq(along = authors)) {
+        xml_add_child(n_authors, 'strong', authors[i])
+    }
+    xml_add_child(body, 'p', pub_info)
+    xml_add_child(body, article)
+    n
 }
 
